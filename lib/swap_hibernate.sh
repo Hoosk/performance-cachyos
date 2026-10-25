@@ -37,11 +37,7 @@ run_swap_hibernate() {
     # Ensure /swap/swapfile entry in /etc/fstab with pri=0 (below zram0 pri=100)
     if ! grep -qE "^${SWAP_FILE_PATH}[[:space:]]" /etc/fstab 2>/dev/null; then
         log_info "Adding ${SWAP_FILE_PATH} (pri=0) to /etc/fstab..."
-        if [[ "${DRY_RUN}" == "1" ]]; then
-            printf "%b[DRY-RUN]%b Append to /etc/fstab: %s none swap defaults,pri=0 0 0\n" "${C_YELLOW}" "${C_RESET}" "${SWAP_FILE_PATH}"
-        else
-            printf "\n%s none swap defaults,pri=0 0 0\n" "${SWAP_FILE_PATH}" | run_priv tee -a /etc/fstab >/dev/null
-        fi
+        append_priv_file /etc/fstab "${SWAP_FILE_PATH} none swap defaults,pri=0 0 0"
     else
         log_info "${SWAP_FILE_PATH} is already present in /etc/fstab."
     fi
@@ -84,11 +80,7 @@ setup_btrfs_swapfile() {
     if ! grep -qE "[[:space:]]${SWAP_MOUNT_DIR}[[:space:]]+btrfs" /etc/fstab 2>/dev/null; then
         log_info "Adding /swap subvolume mount to /etc/fstab..."
         local fstab_line="UUID=${root_uuid} ${SWAP_MOUNT_DIR} btrfs subvol=/@swap,defaults,noatime 0 0"
-        if [[ "${DRY_RUN}" == "1" ]]; then
-            printf "%b[DRY-RUN]%b Append to /etc/fstab: %s\n" "${C_YELLOW}" "${C_RESET}" "${fstab_line}"
-        else
-            printf "%s\n" "${fstab_line}" | run_priv tee -a /etc/fstab >/dev/null
-        fi
+        append_priv_file /etc/fstab "${fstab_line}"
     fi
 
     if ! mountpoint -q "${SWAP_MOUNT_DIR}" 2>/dev/null; then

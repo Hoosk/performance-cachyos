@@ -112,6 +112,26 @@ write_priv_file() {
     fi
 }
 
+# Append a line to a root-owned file safely without running ensure_priv_auth in a pipe subshell
+append_priv_file() {
+    local target="$1"
+    local content="$2"
+    if [[ "${DRY_RUN}" == "1" ]]; then
+        printf "%b[DRY-RUN]%b Append to %s: %s\n" "${C_YELLOW}" "${C_RESET}" "${target}" "${content}"
+        return 0
+    fi
+    if [[ "${EUID}" -eq 0 ]]; then
+        printf "%s\n" "${content}" >> "${target}"
+    else
+        ensure_priv_auth
+        if sudo -n true 2>/dev/null; then
+            printf "%s\n" "${content}" | sudo tee -a "${target}" > /dev/null
+        else
+            printf "%s\n" "${content}" | sudo -A tee -a "${target}" > /dev/null
+        fi
+    fi
+}
+
 backup_file() {
     local target="$1"
     if [[ ! -f "${target}" ]]; then

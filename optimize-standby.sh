@@ -83,36 +83,35 @@ interactive_menu() {
         printf " 10) Setup / Update Desktop Keyring integration (passwordless sudo)\n"
         printf " 11) Clear saved credentials from Desktop Keyring\n"
         printf "  0) Exit\n"
-        printf "-------------------------------------------------------------\n"
-        local choice
-        read -r -p "Select an option [0-11]: " choice
+        printf -- "-------------------------------------------------------------\n"
+        local choice=""
+        read -r -p "Select an option [0-11]: " choice || exit 0
         case "${choice}" in
-            1) run_analyze ;;
+            1) run_analyze || log_warn "Analysis finished with warnings." ;;
             2)
-                run_analyze
+                run_analyze || true
                 if confirm_action "Proceed with full optimization pipeline?"; then
-                    run_cleanup
-                    run_udev_power
-                    run_swap_hibernate
-                    run_systemd_sleep
-                    run_bootloader
-                    log_section "Optimization Complete!"
-                    log_ok "All standby optimizations have been applied."
+                    if run_cleanup && run_udev_power && run_swap_hibernate && run_systemd_sleep && run_bootloader; then
+                        log_section "Optimization Complete!"
+                        log_ok "All standby optimizations have been applied."
+                    else
+                        log_warn "Optimization pipeline stopped due to an error."
+                    fi
                 fi
                 ;;
-            3) run_cleanup ;;
-            4) run_udev_power ;;
-            5) run_swap_hibernate ;;
-            6) run_systemd_sleep ;;
-            7) run_bootloader ;;
-            8) run_test_deep_sleep ;;
+            3) run_cleanup || log_warn "Cleanup did not complete." ;;
+            4) run_udev_power || log_warn "Udev power optimization did not complete." ;;
+            5) run_swap_hibernate || log_warn "Swapfile setup did not complete." ;;
+            6) run_systemd_sleep || log_warn "Systemd configuration did not complete." ;;
+            7) run_bootloader || log_warn "Bootloader update did not complete." ;;
+            8) run_test_deep_sleep || log_warn "S3 deep sleep test did not complete." ;;
             9)
                 if confirm_action "Are you sure you want to revert all standby-optimizer changes?"; then
-                    run_revert
+                    run_revert || log_warn "Revert did not complete."
                 fi
                 ;;
-            10) run_setup_keyring ;;
-            11) run_clear_keyring ;;
+            10) run_setup_keyring || log_warn "Keyring setup did not complete." ;;
+            11) run_clear_keyring || log_warn "Keyring clear did not complete." ;;
             0|q|Q) exit 0 ;;
             *) log_warn "Invalid option: ${choice}" ;;
         esac

@@ -64,7 +64,7 @@ run_analyze() {
         if [[ "${wact}" -gt 10 ]]; then
             printf "  - %-28s active_count=%s\n" "${wname}" "${wact}"
         fi
-    done | sort -t= -k2 -nr | head -n 10
+    done | sort -t= -k2 -nr | head -n 10 || true
 
     log_info "I2C / PCI devices currently allowed to wake the system:"
     for wpath in /sys/bus/i2c/devices/*/power/wakeup /sys/bus/pci/devices/*/power/wakeup; do
